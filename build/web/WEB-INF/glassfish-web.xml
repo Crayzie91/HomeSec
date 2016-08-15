@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glassfish-web-app PUBLIC "-//GlassFish.org//DTD GlassFish Application Server 3.1 Servlet 3.0//EN" "http://glassfish.org/dtds/glassfish-web-app_3_0-1.dtd">
+<glassfish-web-app error-url="">
+  <context-root>/HomeSec</context-root>
+  <property name="alternatedocroot_1" value="from=/Images/* dir=/home/pi/Pictures/"/>
+  <property name="alternatedocroot_2" value="from=/Logs/* dir=/home/pi/NetBeansProjects/VSProjekt/"/>
+  <security-role-mapping>
+    <role-name>User</role-name>
+    <principal-name>khaves</principal-name>
+  </security-role-mapping>
+  <class-loader delegate="true"/>
+  <jsp-config>
+    <property name="keepgenerated" value="true">
+      <description>Keep a copy of the generated servlet class' java code.</description>
+    </property>
+  </jsp-config>
+  <security-constraint/>
+  <login-config>
+    <auth-method/>
+    <realm-name>file</realm-name>
+    <form-login-config/>
+  </login-config>
+  <auth-constraint/>
+  <security-constraints>
+    <web-resource-collection>
+      <web-resource-name>Authentication</web-resource-name>
+      <url-pattern>/*</url-pattern>
+      <http-method>GET</http-method>
+      <http-method>POST</http-method>
+      <http-method>DELETE</http-method>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>admin</role-name>
+    </auth-constraint>
+    <user-data-constraint>
+      <transport-guarantee>NONE</transport-guarantee>
+    </user-data-constraint>
+  </security-constraints>
+</glassfish-web-app>

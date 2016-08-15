@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Heimüberwachung</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <script type="text/javascript" src="HomeSec.js"></script>
+    </head>
+    <body style="font-family:arial;">
+        <h1>Heimüberwachung</h1> 
+        IP:<br>
+        <input type="text" size="25" maxlength="25" id="ip">
+        <label id="IpLabel" ></label>
+        <br><br>
+        <button onclick="postHttpRequest('HomeSecServer')">Hinzufügen</button>
+   	<button onclick="deleteHttpRequest('HomeSecServer')">Entfernen</button>
+        <button onClick="getHttpRequest('HomeSecServer')">Aktualisieren</button>
+        <br><br>
+        Intervall (in Minuten)<br>       
+        <input type="text" size="15" maxlength="15" id="refresh">
+        <label id="IntervalLabel" > Intervall ist deaktiviert!</label>
+        <br><br>
+        <button onClick="setRefreshCycle()">Intervall setzen</button>
+        <br>
+        <div id="images" style="font-family:arial;font-size:10pt;">
+        </div>
+        <br><br>
+        <div id="timestamp" style="font-family:arial;font-size:10pt;">
+        </div>
+        <a href="Logs/Socket.txt" target="_blank">Socket</a>
+        <a href="Logs/JSON.txt" target="_blank">JSON</a>
+        <a href="Logs/Thread.txt" target="_blank">Thread</a>
+    </body>
+</html>
+
