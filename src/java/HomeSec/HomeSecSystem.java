@@ -67,17 +67,16 @@ public class HomeSecSystem {
      * Delete Entry by id.
      * 
      * @param idx Id of Camera that should be deleted
-     * @param ImgDir Path to image Directory
      * 
-     * @return CreateJSON Function is called to genererate an updated JSON Object
+     * @return true Entry could be deleted/false Entry doesnt exist
      */
-    public String deleteEntry (int idx, String ImgDir) {
+    public boolean deleteEntry (int idx) {
         if(CamArray[idx-1].id!=0 && idx < 5 && idx > 0){
             CamArray[idx-1].reset();
-            return createJSON(ImgDir);
+            return true;
         }
         else
-            return "";
+            return false;
     }
     
     /**
@@ -175,11 +174,12 @@ public class HomeSecSystem {
      * @param CamID ID of Client in CamArray
      * @throws IOException if an I/O error occurs
      */
-    public void connectSocket(String ImgDir,int CamID) throws IOException{
+    public boolean connectSocket(String ImgDir,int CamID) throws IOException{
         ServerSocket ServSock = null;
         Socket CliSock = null;
         String PicName;
         int LastActiveCam=0, ArrayID=0;
+        boolean bOK=true;
         
         PrintWriter writer = null;
         
@@ -194,8 +194,8 @@ public class HomeSecSystem {
                 writer.println("Alle Kameras wurden angefordert!");
             
             ServSock = new ServerSocket(8998);
-        } catch (IOException e) {
-            writer.println("Server Socket kann nicht erzeugt werden.");  
+        } catch (Exception e) {
+            writer.println("Server Socket kann nicht erzeugt werden:"+e);  
              writer.close();
         }
        
@@ -207,8 +207,8 @@ public class HomeSecSystem {
             if(CamArray[i].id == 0){
                 writer.println("Continue!");
                 continue;
-            }//Ignore localhost if GET
-            else if(CamID != 0 && !CamArray[i].ip.equals("localhost"))
+            }//Dont set localhost as LastActiveCam if GET
+            else if(CamID != 0 || (CamID==0 && !CamArray[i].ip.equals("localhost")))
                 LastActiveCam=i;
             
             CamArray[i].ThreadHandle=new Thread(new HomeSecConnect(ServSock, CamArray[i].ip, ImgDir));
@@ -220,9 +220,20 @@ public class HomeSecSystem {
         }
         
         writer.println("LastActiveCam:"+LastActiveCam);
-        //Wait on last Thread to finish
+        //Wait for every Thread to finish and check if thread could be started, else reset client
         try {
-            CamArray[LastActiveCam].ThreadHandle.join();
+            //Wait for short period to register if a thread was interrupted
+            Thread.sleep(100);
+            for(int i=LastActiveCam; i>=0; i--){
+                if(CamArray[i].id != 0){
+                    if(CamArray[i].ThreadHandle.isAlive())
+                        CamArray[i].ThreadHandle.join();
+                    else{
+                       bOK=false;  
+                       CamArray[i].reset();
+                    }
+                }
+            }
         } catch (InterruptedException ex) {
             writer.println("Excpetion beim Warten auf Thread "+LastActiveCam+":"+ex);
         }  
@@ -230,5 +241,39 @@ public class HomeSecSystem {
         ServSock.close();
         writer.println("Funktion erfolgreich verlassen!\r\n");
         writer.close();
+        return bOK;
     }
+    
+    /**
+     ** Check if passed IP is valid.
+     * 
+     * @param ip String with IP to check
+     * @return true=valid/false=invalid
+     */
+    public boolean validIP (String ip) {
+    try {
+        if ( ip == null || ip.isEmpty() ) {
+            return false;
+        }
+
+        String[] parts = ip.split( "\\." );
+        if ( parts.length != 4 ) {
+            return false;
+        }
+
+        for ( String s : parts ) {
+            int i = Integer.parseInt( s );
+            if ( (i < 0) || (i > 255) ) {
+                return false;
+            }
+        }
+        if ( ip.endsWith(".") ) {
+            return false;
+        }
+
+        return true;
+    } catch (NumberFormatException nfe) {
+        return false;
+    }
+}
 }

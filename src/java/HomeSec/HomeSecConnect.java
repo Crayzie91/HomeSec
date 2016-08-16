@@ -89,8 +89,9 @@ public class HomeSecConnect implements Runnable{
             writer = new PrintWriter(new FileWriter("/home/pi/NetBeansProjects/VSProjekt/Logs/Thread.txt",true));
             writer.println("\r\nVerbunden mit "+this.ip);            
             
-            //Connect to WebService Client
-            getService(this.ip);
+            //Connect to WebService Client. End Thread if connection fails
+            if(!getService(this.ip))
+                return;
             writer.println("Service verbunden!");
             //Client takes Picture
             PicPath=takePicture(ImgDir);
@@ -128,7 +129,7 @@ public class HomeSecConnect implements Runnable{
             String PicPath=hsc.takePicture(ImgDir);
             return PicPath;
         } catch (Exception e) {
-            System.err.println("Exception " + e);
+            System.err.println("Exception in takePicture " + e);
         }
         return "";
     }
@@ -138,19 +139,23 @@ public class HomeSecConnect implements Runnable{
             hsc.sendPicture("192.168.0.110", PicPath);
             return true;
         } catch (Exception e) {
-            System.err.println("Exception " + e);
+            System.err.println("Exception in send Picture" + e);
         }
         return false;
     }
     
-    public void getService(String ip){
+    public boolean getService(String ip){
         try {
             URL wsdl = new URL("http://"+ip+":8180/HomeSecClientService?wsdl");
             QName serviceName = new QName("http://HomeSec/", "HomeSecClientService");
             Service service = Service.create(wsdl, serviceName);
             hsc = service.getPort(HomeSecClient.class);
-        } catch (MalformedURLException ex) {
-            System.err.println("MalformedURLException " + ex);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Exception in getService" + e);
+            //End Thread if Client could be connected
+            Thread.currentThread().interrupt();
+            return false;          
         }
     }   
 }

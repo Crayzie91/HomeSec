@@ -45,8 +45,14 @@ function postHttpRequest(url) {
     
     xmlhttp.onreadystatechange = function() {
          if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-            $('IpLabel').innerHTML="";
-            buildHTML(xmlhttp.responseText);
+            if(xmlhttp.responseText=="client\n") 
+                $('IpLabel').innerHTML="Client nicht gefunden!";
+            else if (xmlhttp.responseText=="format\n") 
+                $('IpLabel').innerHTML="Ungültiges IP Format!";
+            else{
+                $('IpLabel').innerHTML="";
+                buildHTML(xmlhttp.responseText);
+            }
         }
     }
     xmlhttp.send("ip="+IpIn);

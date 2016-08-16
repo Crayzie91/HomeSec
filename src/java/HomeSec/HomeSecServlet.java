@@ -58,21 +58,26 @@ public class HomeSecServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
-        //Read IP of new camera and ID of new entry
-        String ClientIp = request.getParameter("ip");
-        if(ClientIp.equals(request.getLocalAddr())) ClientIp="localhost";
-        int CamID=sys.createEntry(ClientIp);
-        
-        //Set response
-        response.setContentType("application/json;charset=UTF-8");
+        String table;
         PrintWriter out = response.getWriter();
+        //Read IP of new camera and ID of new entry
+        String ClientIp = request.getParameter("ip");       
         
-        //Connects with new camera to get first picture(CamID is set)    
-        sys.connectSocket(ImgDir,CamID);
+        if(sys.validIP(ClientIp)){
+            if(ClientIp.equals(request.getLocalAddr())) ClientIp="localhost";
+            int CamID=sys.createEntry(ClientIp);
         
-        //create and send JSON
-        String table = sys.createJSON(ImgDir);
+            //Connects with new camera to get first picture(CamID is set)    
+            if(sys.connectSocket(ImgDir,CamID)){        
+                //create and send JSON
+                table = sys.createJSON(ImgDir);
+            }
+            else
+                table="client";
+        }
+        else
+            table="format";
+        
         try {
             out.println(table);
         } finally {
@@ -92,10 +97,11 @@ public class HomeSecServlet extends HttpServlet {
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         int id=Integer.valueOf(request.getHeader("id"));
-        String output=sys.deleteEntry(id, ImgDir);
+        sys.deleteEntry(id);
+        String table = sys.createJSON(ImgDir);
         
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();       
-        out.println(output);           
+        out.println(table);           
     }
 }
