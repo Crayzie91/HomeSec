@@ -108,7 +108,7 @@ function setRefreshCycle(){
     var refreshVal=parseInt($('refresh').value);   
     //deactivate cycle if input is 0 or empty
     if(refreshVal==0 || isNaN(refreshVal)){ 
-        $('IntervalLabel').innerhTML = "Intervall ist deaktiviert!";
+        $('IntervalLabel').innerHTML = "Intervall ist deaktiviert!";
         clearInterval(myvar);
     }//else calculate the time and set interval
     else{
@@ -116,6 +116,6 @@ function setRefreshCycle(){
         myvar=setInterval(function() {
         //getHttpRequest('HomeSecServer');
         $('timestamp').innerHTML = new Date().toString()},cycle);
-        $('IntervalLabel').innerhTML = "Intervall ist gesetzt!";
+        $('IntervalLabel').innerHTML = "Intervall ist gesetzt!";
     }
 }
