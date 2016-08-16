@@ -20,6 +20,7 @@ function getHttpRequest(url) {
     xmlhttp.onreadystatechange = function() {
         if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
             $('IpLabel').innerHTML="";
+			$('timestamp').innerHTML = new Date().toString();
             buildHTML(xmlhttp.responseText);
         }
     }
@@ -114,8 +115,7 @@ function setRefreshCycle(){
     else{
         var cycle = refreshVal*1000*60;
         myvar=setInterval(function() {
-        //getHttpRequest('HomeSecServer');
-        $('timestamp').innerHTML = new Date().toString()},cycle);
+        getHttpRequest('HomeSecServer')},cycle);
         $('IntervalLabel').innerHTML = "Intervall ist gesetzt!";
     }
 }
