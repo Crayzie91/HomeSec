@@ -15,6 +15,7 @@ import java.util.logging.Logger;
  */
 public class HomeSecSystem {
     private final short SIZE = 5;
+    int ActiveCam=0;
     static private String servlet_ctxt;
     Camera[] CamArray = new Camera[SIZE];
     
@@ -57,6 +58,7 @@ public class HomeSecSystem {
             if (CamArray[i].ip.equals("<empty>")){
                CamArray[i].id=i+1;
                CamArray[i].ip=ip;
+               ActiveCam++;
                return CamArray[i].id;
             }
         }
@@ -73,6 +75,7 @@ public class HomeSecSystem {
     public boolean deleteEntry (int idx) {
         if(CamArray[idx-1].id!=0 && idx < 5 && idx > 0){
             CamArray[idx-1].reset();
+            ActiveCam--;
             return true;
         }
         else
@@ -111,14 +114,20 @@ public class HomeSecSystem {
                 result.append("{\"id\":"+CamArray[0].id+","
                         + " \"ip\":\""+CamArray[0].ip+"\","
                         + " \"path\":\""+PathToLatestFile+"\"");
-            }   //Check for Rest of Array
+            } 
+            
+            //Check for Rest of Array
             for (int i=1; i<CamArray.length; i++) {
                 if(CamArray[i].id!=0 ){
+                    empty=false;
+                    if (CamArray[i-1].id!=0)
+                        result.append("},");
                     writer.println(i+": Restpfad aus Array:"+CamArray[i].ip+"/"+day);
                     PathToLatestFile=getLatestFilePath(ImgDir
                             +CamArray[i].ip+"/"+day);
                     writer.println(i+":"+PathToLatestFile);
-                    result.append("},{\"id\":"+CamArray[i].id+","
+                    
+                    result.append("{\"id\":"+CamArray[i].id+","
                             + " \"ip\":\""+CamArray[i].ip+"\","
                             + " \"path\":\""+PathToLatestFile+"\"");
                 }
@@ -189,7 +198,7 @@ public class HomeSecSystem {
         try {
             writer = new PrintWriter(new FileWriter("/home/pi/NetBeansProjects/VSProjekt/Logs/Socket.txt",true));
             if(CamID !=0)
-                writer.println("CamtID: "+CamID+" Ip:"+CamArray[ArrayID].ip);
+                writer.println("CamID: "+CamID+" Ip:"+CamArray[ArrayID].ip);
             else
                 writer.println("Alle Kameras wurden angefordert!");
             
@@ -197,6 +206,7 @@ public class HomeSecSystem {
         } catch (Exception e) {
             writer.println("Server Socket kann nicht erzeugt werden:"+e);  
              writer.close();
+             bOK=false;
         }
        
         
@@ -207,8 +217,7 @@ public class HomeSecSystem {
             if(CamArray[i].id == 0){
                 writer.println("Continue!");
                 continue;
-            }//Dont set localhost as LastActiveCam if GET
-            else if(CamID != 0 || (CamID==0 && !CamArray[i].ip.equals("localhost")))
+            }else
                 LastActiveCam=i;
             
             CamArray[i].ThreadHandle=new Thread(new HomeSecConnect(ServSock, CamArray[i].ip, ImgDir));
@@ -222,20 +231,15 @@ public class HomeSecSystem {
         writer.println("LastActiveCam:"+LastActiveCam);
         //Wait for every Thread to finish and check if thread could be started, else reset client
         try {
-            //Wait for short period to register if a thread was interrupted
-            Thread.sleep(100);
             for(int i=LastActiveCam; i>=0; i--){
                 if(CamArray[i].id != 0){
                     if(CamArray[i].ThreadHandle.isAlive())
                         CamArray[i].ThreadHandle.join();
-                    else{
-                       bOK=false;  
-                       CamArray[i].reset();
-                    }
                 }
             }
         } catch (InterruptedException ex) {
             writer.println("Excpetion beim Warten auf Thread "+LastActiveCam+":"+ex);
+            bOK=false;
         }  
         
         ServSock.close();

@@ -2,6 +2,7 @@ package HomeSec;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
@@ -30,16 +31,18 @@ public class HomeSecServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String caller_ip = request.getRemoteAddr();
+        String output;
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
         
         //Connects with all cameras (ArrayID=0) to get current pictures
-        sys.connectSocket(ImgDir,0);
+        if(sys.connectSocket(ImgDir,0))       
+            output = sys.createJSON(ImgDir);
+        else
+            output="error";
         
-        String table = sys.createJSON(ImgDir);
         try {
-            out.println(table);
+            out.println(output);
         } finally {
             out.close();
         }
@@ -58,28 +61,36 @@ public class HomeSecServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String table;
+        String output;
+        response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();
         //Read IP of new camera and ID of new entry
-        String ClientIp = request.getParameter("ip");       
+        String ClientIp = request.getParameter("ip");
         
-        if(sys.validIP(ClientIp)){
-            if(ClientIp.equals(request.getLocalAddr())) ClientIp="localhost";
-            int CamID=sys.createEntry(ClientIp);
-        
-            //Connects with new camera to get first picture(CamID is set)    
-            if(sys.connectSocket(ImgDir,CamID)){        
-                //create and send JSON
-                table = sys.createJSON(ImgDir);
+        if(ClientIp.equals(request.getLocalAddr())) ClientIp="localhost";
+        //Check if IP format is valid
+        if(sys.validIP(ClientIp) || ClientIp.equals("localhost")){
+            //Check if client is reachable
+            if(InetAddress.getByName(ClientIp).isReachable(1000)){
+                //Create Entry
+                int CamID=sys.createEntry(ClientIp);
+
+                //Connects with new camera to get first picture(CamID is set)    
+                if(sys.connectSocket(ImgDir,CamID)){        
+                    //create and send JSON
+                    output = sys.createJSON(ImgDir);
+                }
+                else
+                    output="error";
             }
             else
-                table="client";
+                output="client";
         }
         else
-            table="format";
+            output="format";
         
         try {
-            out.println(table);
+            out.println(output);
         } finally {
             out.close();
         }
@@ -96,12 +107,16 @@ public class HomeSecServlet extends HttpServlet {
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String output;
         int id=Integer.valueOf(request.getHeader("id"));
-        sys.deleteEntry(id);
-        String table = sys.createJSON(ImgDir);
         
-        response.setContentType("text/html;charset=UTF-8");
+        if(sys.deleteEntry(id))
+            output = sys.createJSON(ImgDir);
+        else
+            output = "error";
+        
+        response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();       
-        out.println(table);           
+        out.println(output);           
     }
 }
