@@ -1,12 +1,17 @@
 package HomeSec;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.json.Json;
+import static javax.json.Json.createObjectBuilder;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
 
 /**
  * Implementation of the HomeSecuritySystem. 
@@ -51,7 +56,7 @@ public class HomeSecSystem {
      * 
      * @param ip IP of Camera 
      * @return TRUE if camera was addes to the HomeSecSystem.
- FALSE if no more cameras vould be added to the HomeSecSystem.
+               FALSE if no more cameras vould be added to the HomeSecSystem.
      */
     public int createEntry (String ip) {
         for (int i = 0; i < SIZE; i++) {
@@ -91,60 +96,39 @@ public class HomeSecSystem {
      */
     public String createJSON(String ImgDir){
         String  day, PathToLatestFile;
-        boolean empty=true;
         PrintWriter writer=null;
-        StringBuilder result=null;
+        JsonObject json=null;
+        JsonArrayBuilder builder=Json.createArrayBuilder();
         
         try {
             writer = new PrintWriter("/home/pi/NetBeansProjects/VSProjekt/Logs/JSON.txt","UTF-8");
             writer.println("ImgDir:"+ImgDir);
 
             day=new SimpleDateFormat("dd.MM.yyyy").format(Calendar.getInstance().getTime());
-            result = new StringBuilder();
+
+            for (int i=0; i<CamArray.length; i++) {
+                if(CamArray[i].id==0) continue;
+                
+                PathToLatestFile=getLatestFilePath(ImgDir+CamArray[i].ip+"/"+day);
+                builder.add(Json.createObjectBuilder()
+                                .add("id",CamArray[i].id)
+                                .add("ip",CamArray[i].ip)
+                                .add("path",PathToLatestFile));                       
+            }
+            JsonArray arr=builder.build();
             
-            result.append("{\"server\":\""+HomeSecSystem.servlet_ctxt+"\",");
-            result.append("\"cameras\":[");
-            //Check if anything is in Array, get latest File and create start of JSON
-            if(CamArray[0].id != 0){
-                empty=false;
-                //Set if Array isnt empty
-                writer.println("Restpfad aus Array:"+CamArray[0].ip+"/"+day);
-                PathToLatestFile=getLatestFilePath(ImgDir+CamArray[0].ip+"/"+day);
-                writer.println("0:"+PathToLatestFile);
-                result.append("{\"id\":"+CamArray[0].id+","
-                        + " \"ip\":\""+CamArray[0].ip+"\","
-                        + " \"path\":\""+PathToLatestFile+"\"");
-            } 
+            json=createObjectBuilder()
+                    .add("server",HomeSecSystem.servlet_ctxt)
+                    .add("cameras",arr)
+            .build();
             
-            //Check for Rest of Array
-            for (int i=1; i<CamArray.length; i++) {
-                if(CamArray[i].id!=0 ){
-                    empty=false;
-                    if (CamArray[i-1].id!=0)
-                        result.append("},");
-                    writer.println(i+": Restpfad aus Array:"+CamArray[i].ip+"/"+day);
-                    PathToLatestFile=getLatestFilePath(ImgDir
-                            +CamArray[i].ip+"/"+day);
-                    writer.println(i+":"+PathToLatestFile);
-                    
-                    result.append("{\"id\":"+CamArray[i].id+","
-                            + " \"ip\":\""+CamArray[i].ip+"\","
-                            + " \"path\":\""+PathToLatestFile+"\"");
-                }
-            }   
-            //Close JSON 
-            if(empty)
-                result.append("]}");
-            else    
-                result.append("}]}");
-                       
-            writer.println(result);
+            writer.println(json.toString());
         } catch (FileNotFoundException | UnsupportedEncodingException ex) {
             Logger.getLogger(HomeSecSystem.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             writer.close();
         }
-        return result.toString();
+        return json.toString();
     } 
     
     
@@ -181,12 +165,11 @@ public class HomeSecSystem {
      * 
      * @param ImgDir Path to Image Directory
      * @param CamID ID of Client in CamArray
+     * @return True if Connection was successfull else false
      * @throws IOException if an I/O error occurs
      */
     public boolean connectSocket(String ImgDir,int CamID) throws IOException{
         ServerSocket ServSock = null;
-        Socket CliSock = null;
-        String PicName;
         int LastActiveCam=0, ArrayID=0;
         boolean bOK=true;
         
@@ -213,6 +196,11 @@ public class HomeSecSystem {
         //POST: CamID=new Camera ID / GET: CamID=0 ->get all cameras
         for(int i=ArrayID; i < CamArray.length; i++){
             writer.println("Loop betreten: "+i);
+            //If GET check if Client cant be reached else reset client
+            if(CamID==0 && CamArray[i].id !=0 
+                    &&!InetAddress.getByName(CamArray[i].ip).isReachable(1000)){
+                CamArray[i].reset();
+            }
             //If Camera isnt set skip camera else set LastActiveCamera     
             if(CamArray[i].id == 0){
                 writer.println("Continue!");

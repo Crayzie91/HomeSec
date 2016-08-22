@@ -3,8 +3,6 @@ package HomeSec;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -12,8 +10,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- *
- * @author Kevin Haves
+ * Implementation of the HomeSecurityServlet. 
+ * 
+ * @author khaves
  */
 @WebServlet(urlPatterns = {"/HomeSecServer"})
 public class HomeSecServlet extends HttpServlet {
@@ -108,12 +107,17 @@ public class HomeSecServlet extends HttpServlet {
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String output;
+        try{
         int id=Integer.valueOf(request.getHeader("id"));
         
         if(sys.deleteEntry(id))
             output = sys.createJSON(ImgDir);
         else
             output = "error";
+        }
+        catch (Exception e){
+            output="id";
+        }
         
         response.setContentType("application/json;charset=UTF-8");
         PrintWriter out = response.getWriter();       

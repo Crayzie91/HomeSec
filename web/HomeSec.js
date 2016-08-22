@@ -5,93 +5,78 @@ function $(id) {
 }
 
 function getHttpRequest(url) {
-    var xmlhttp = null;
-    // Mozilla
-    if (window.XMLHttpRequest) {
-        xmlhttp = new XMLHttpRequest();
-    }
-    // IE
-    else if (window.ActiveXObject) {
-        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-    }
-    
-    xmlhttp.open("GET", url, true);
-    $('IpLabel').innerHTML="Alle Kameras werden aktualisiert..."
-    xmlhttp.onreadystatechange = function() {
-        if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+ 
+    jQuery.ajax({
+        type:"GET",
+        url:url,
+        dataType:'json',
+        beforeSend:function(){
+            $('IpLabel').innerHTML="Alle Kameras werden aktualisiert...";
+        },
+        success:function(result){
             $('IpLabel').innerHTML="";
-            buildHTML(xmlhttp.responseText);
-        }
-    }
-    xmlhttp.send(null);
+            buildHTML(result);
+            }
+    });
 }
 
 function postHttpRequest(url) {
-    var xmlhttp = null;
-    // Mozilla
-    if (window.XMLHttpRequest) {
-        xmlhttp = new XMLHttpRequest();
-    }
-    // IE
-    else if (window.ActiveXObject) {
-        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-    }
-   
-    xmlhttp.open("POST", url, true);
+
     var IpIn=$("ip").value;
     $("ip").value="";
-    $('IpLabel').innerHTML="Client "+IpIn+" wird kontaktiert..."
-    xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     
-    xmlhttp.onreadystatechange = function() {
-         if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-            if(xmlhttp.responseText=="error\n") 
+    jQuery.ajax({
+        type:"POST",
+        url:url,
+        data:{ip:IpIn},
+        dataType:'json',
+        beforeSend:function(){
+            $('IpLabel').innerHTML="Client "+IpIn+" wird kontaktiert...";
+        },
+        success:function(result){
+            $('IpLabel').innerHTML="";
+            buildHTML(result);
+        },
+        error: function(result){
+            if(result.responseText=="error\n") 
                 $('IpLabel').innerHTML="Ein Fehler ist aufgetreten!";
-            else if (xmlhttp.responseText=="format\n") 
+            else if (result.responseText=="format\n") 
                 $('IpLabel').innerHTML="Ungültiges IP Format!";
-            else if (xmlhttp.responseText=="client\n") 
-                $('IpLabel').innerHTML="Client nicht erreichbar!";
-            else{
-                $('IpLabel').innerHTML="";
-                buildHTML(xmlhttp.responseText);
-            }
+            else if (result.responseText=="client\n") 
+                $('IpLabel').innerHTML="Client nicht erreichbar!";       
         }
-    }
-    xmlhttp.send("ip="+IpIn);
+    });
 }
 
 function deleteHttpRequest(url) {
-    var xmlhttp = null;
-    // Mozilla
-    if (window.XMLHttpRequest) {
-        xmlhttp = new XMLHttpRequest();
-    }
-    // IE
-    else if (window.ActiveXObject) {
-        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-    }
-    xmlhttp.open("DELETE", url, true);
-    var id=$("ip").value;
+
+    var IdIn=$("ip").value;
     $("ip").value="";
     
-    xmlhttp.setRequestHeader('id', id);
-    xmlhttp.onreadystatechange = function() {
-         if(xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+    jQuery.ajax({
+    type:"DELETE",
+    url:url,
+    headers:{id:IdIn},
+    dataType:'json',
+    success:function(result){
             //If servlet returns empty response camera doesnt exist
-            if(xmlhttp.responseText != "error\n"){
-                $('IpLabel').innerHTML="Kamera "+id+" wurde gelöscht!";
-                buildHTML(xmlhttp.responseText);
-            }
-            else
+            if(result == "error\n")
                 $('IpLabel').innerHTML="Kamera konnte nicht gelöscht werden!";
+        },
+    error: function(result){
+            if (result.responseText == "id\n")
+                $('IpLabel').innerHTML="Bitte Kamera ID angeben!";
+            else {
+                $('IpLabel').innerHTML="Kamera "+IdIn+" wurde gelöscht!";
+                buildHTML(result);
+            }
         }
-    }
-    xmlhttp.send();
+    });
 }
 
 //Build HTML for "images" field from passed JSONText
-function buildHTML(JSONText){
-   var jsnObj=JSON.parse(JSONText);
+function buildHTML(jsnObj){
+   //var jsnObj=JSON.parse(JSONText);
    
    var html="";   
    for(var i in jsnObj.cameras){
@@ -107,7 +92,12 @@ function buildHTML(JSONText){
 
 //Set cyle to refresh camera pictures
 function setRefreshCycle(){
-    var refreshVal=parseInt($('refresh').value);   
+    var refreshVal=parseInt($('refresh').value);
+    //Check if value is negative
+    if(refreshVal<0){
+        refreshVal=0;
+        $('IntervalLabel').innerHTML = "Ungültiger Wert!";
+    }
     //deactivate cycle if input is 0 or empty
     if(refreshVal==0 || isNaN(refreshVal)){ 
         $('IntervalLabel').innerHTML = "Intervall ist deaktiviert!";
@@ -116,7 +106,7 @@ function setRefreshCycle(){
     else{
         var cycle = refreshVal*1000*60;
         myvar=setInterval(function() {
-        //getHttpRequest('HomeSecServer');
+        getHttpRequest('HomeSecServer');
         $('timestamp').innerHTML = new Date().toString()},cycle);
         $('IntervalLabel').innerHTML = "Intervall ist gesetzt!";
     }

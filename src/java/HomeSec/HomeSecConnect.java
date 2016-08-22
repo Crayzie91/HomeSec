@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
@@ -22,11 +21,10 @@ import javax.xml.ws.Service;
 
 /**
  * Class implements Thread to handle Connections.
- * Thread connects to WebService of Client ({@link #handleClient() handleClient}
- * ) to take and receive picture from Client.
+ * Thread connects to WebService of Client to take and receive picture from Client.
  * Image is saved on Server.
  * To take picture with server camera a local function 
- * ({@link #handleServer() handlerServer}) is called to take and save image.
+ * is called to take and save image.
  * 
  * @author khaves
  */
@@ -44,6 +42,10 @@ public class HomeSecConnect implements Runnable{
         this.ImgDir = img;
     }
     
+     /**
+     * Called on server start.
+     * 
+     */
     @Override
     public void run(){
         if (this.ip.equals("localhost")) 
@@ -52,6 +54,11 @@ public class HomeSecConnect implements Runnable{
             handleClient();
     }
     
+     /**
+     * Handles call of server.
+     * Takes picture with server camera. 
+     * 
+     */
     public void handleServer(){
         String day,time,path,command;
         
@@ -80,6 +87,11 @@ public class HomeSecConnect implements Runnable{
         } 
     }
     
+     /**
+     * Handles connection to client.
+     * Instructs client to take picture and send it. 
+     * 
+     */
     public void handleClient(){
         String day, PicPath, ComplPath=null;
         Socket CliSock=null;
@@ -124,6 +136,12 @@ public class HomeSecConnect implements Runnable{
         }      
     }
     
+     /**
+     * Instructs client to take Picture. 
+     * 
+     * @param ImgDir Directory to save pictures in
+     * @return Path to picture
+     */
     public String takePicture(String ImgDir){
         try {
             String PicPath=hsc.takePicture(ImgDir);
@@ -134,6 +152,12 @@ public class HomeSecConnect implements Runnable{
         return "";
     }
     
+    /**
+     * Instructs client to send Picture. 
+     * 
+     * @param PicPath Picture to send
+     * @return true if picture was send else false
+     */
     public boolean sendPicture(String PicPath){
         try {
             hsc.sendPicture("192.168.0.110", PicPath);
@@ -144,6 +168,12 @@ public class HomeSecConnect implements Runnable{
         return false;
     }
     
+    /**
+     * Connects to client web service. 
+     * 
+     * @param ip IP of client
+     * @return true if connection was established else false
+     */
     public boolean getService(String ip){
         try {
             URL wsdl = new URL("http://"+ip+":8180/HomeSecClientService?wsdl");
